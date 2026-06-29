@@ -1,0 +1,328 @@
+/* ===========================================
+   E2FIX - Global Theme
+=========================================== */
+
+.main {
+    background-color: #F5F7FA;
+}
+
+/* Hide Streamlit default menu */
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+header {
+    visibility: hidden;
+}
+
+/* ===========================================
+   Title
+=========================================== */
+
+.main-title{
+    font-size:40px;
+    font-weight:700;
+    color:#0A4D68;
+    text-align:center;
+    margin-bottom:5px;
+}
+
+.sub-title{
+    font-size:18px;
+    color:#666666;
+    text-align:center;
+    margin-bottom:25px;
+}
+
+/* ===========================================
+   Section Title
+=========================================== */
+
+.section-title{
+    font-size:24px;
+    font-weight:600;
+    color:#0A4D68;
+    margin-top:20px;
+    margin-bottom:15px;
+}
+
+/* ===========================================
+   KPI Cards
+=========================================== */
+
+.metric-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
+
+    text-align:center;
+
+    transition:0.3s;
+}
+
+.metric-card:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:0 8px 20px rgba(0,0,0,0.12);
+
+}
+
+.metric-title{
+
+    font-size:16px;
+
+    color:#777;
+
+    font-weight:500;
+
+}
+
+.metric-value{
+
+    font-size:36px;
+
+    color:#0A4D68;
+
+    font-weight:bold;
+
+}
+
+.metric-status{
+
+    font-size:15px;
+
+    color:#4CAF50;
+
+}
+
+/* ===========================================
+   Dashboard Card
+=========================================== */
+
+.dashboard-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    margin-top:15px;
+
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
+
+}
+
+/* ===========================================
+   Action Cards
+=========================================== */
+
+.action-card{
+
+    background:#ffffff;
+
+    border-left:6px solid #088395;
+
+    border-radius:15px;
+
+    padding:18px;
+
+    margin-bottom:15px;
+
+    box-shadow:0 4px 10px rgba(0,0,0,0.06);
+
+}
+
+/* ===========================================
+   Score Box
+=========================================== */
+
+.score-box{
+
+    background:linear-gradient(135deg,#0A4D68,#088395);
+
+    color:white;
+
+    padding:30px;
+
+    border-radius:20px;
+
+    text-align:center;
+
+    font-size:38px;
+
+    font-weight:bold;
+
+    margin-top:20px;
+
+}
+
+/* ===========================================
+   Recovery Box
+=========================================== */
+
+.recovery-box{
+
+    background:linear-gradient(135deg,#4CAF50,#81C784);
+
+    color:white;
+
+    border-radius:20px;
+
+    padding:25px;
+
+    text-align:center;
+
+    font-size:30px;
+
+    font-weight:bold;
+
+}
+
+/* ===========================================
+   AI Recommendation
+=========================================== */
+
+.ai-box{
+
+    background:#EEF8FF;
+
+    border-left:6px solid #0A4D68;
+
+    border-radius:15px;
+
+    padding:20px;
+
+    margin-top:15px;
+
+}
+
+/* ===========================================
+   Tables
+=========================================== */
+
+table{
+
+    border-radius:10px;
+
+}
+
+/* ===========================================
+   Buttons
+=========================================== */
+
+.stButton>button{
+
+    background:#0A4D68;
+
+    color:white;
+
+    border-radius:10px;
+
+    border:none;
+
+    padding:12px 20px;
+
+    font-size:16px;
+
+    font-weight:bold;
+
+}
+
+.stButton>button:hover{
+
+    background:#088395;
+
+    color:white;
+
+}
+
+/* ===========================================
+   Sidebar
+=========================================== */
+
+section[data-testid="stSidebar"]{
+
+    background:#0A4D68;
+
+}
+
+section[data-testid="stSidebar"] *{
+
+    color:white;
+
+}
+
+/* ===========================================
+   Success Box
+=========================================== */
+
+.success-box{
+
+    background:#E8F5E9;
+
+    border-left:6px solid #4CAF50;
+
+    padding:15px;
+
+    border-radius:12px;
+
+}
+
+/* ===========================================
+   Warning Box
+=========================================== */
+
+.warning-box{
+
+    background:#FFF8E1;
+
+    border-left:6px solid #FF9800;
+
+    padding:15px;
+
+    border-radius:12px;
+
+}
+
+/* ===========================================
+   Danger Box
+=========================================== */
+
+.danger-box{
+
+    background:#FDECEA;
+
+    border-left:6px solid #E53935;
+
+    padding:15px;
+
+    border-radius:12px;
+
+}
+
+/* ===========================================
+   Footer
+=========================================== */
+
+.footer{
+
+    text-align:center;
+
+    color:#888;
+
+    margin-top:40px;
+
+    font-size:14px;
+
+}

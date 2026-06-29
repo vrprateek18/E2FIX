@@ -1,0 +1,181 @@
+# Re-run with 1-year hourly synthetic data (2019) to reduce memory usage.
+import os, time, joblib
+import numpy as np, pandas as pd
+from datetime import datetime
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.preprocessing import StandardScaler
+try:
+    from xgboost import XGBRegressor
+    XGBOOST_AVAILABLE = True
+except Exception:
+    XGBOOST_AVAILABLE = False
+
+out_dir = '/mnt/data/outputs_synthetic_hourly'
+# cleanup
+if os.path.exists(out_dir):
+    for f in os.listdir(out_dir):
+        try:
+            os.remove(os.path.join(out_dir,f))
+        except Exception:
+            pass
+else:
+    os.makedirs(out_dir, exist_ok=True)
+
+# generate 1 year (2019)
+rng = pd.date_range(start='2019-01-01', end='2019-12-31 23:00:00', freq='H')  # 1 year
+n = len(rng)
+np.random.seed(42)
+hour = rng.hour.values
+dayofweek = rng.dayofweek.values
+daily_cycle = 10 * np.sin(2 * np.pi * hour / 24 - 1.0)
+weekly_effect = 3 * ((dayofweek >=5).astype(float)) * -1
+yearly = 8 * np.sin(2 * np.pi * (rng.dayofyear.values) / 365.25 + 0.5)
+trend = 0.002 * np.arange(n)
+temp = 15 + 10 * np.sin(2 * np.pi * (rng.dayofyear.values) / 365.25 - 0.3) + np.random.normal(0,1,n)
+base = 50 + daily_cycle + weekly_effect + yearly + trend - 0.3 * (temp - 20)
+noise = np.random.normal(0, 2.5, n)
+spikes = np.random.choice([0,0,0,20, -5], size=n, p=[0.98,0.0,0.0,0.01,0.01])
+consumption = base + noise + spikes
+consumption = np.clip(consumption, a_min=5, a_max=None)
+humidity = 60 + 15 * np.cos(2 * np.pi * rng.dayofyear.values / 365.25) + np.random.normal(0,5,n)
+wind_speed = 3 + 1.5 * np.sin(2 * np.pi * rng.dayofyear.values / 365.25 + 1.0) + np.random.normal(0,0.5,n)
+humidity = np.clip(humidity, 10, 100)
+
+df = pd.DataFrame({'timestamp': rng, 'consumption': consumption, 'temp': temp, 'humidity': humidity, 'wind_speed': wind_speed}).set_index('timestamp')
+df.to_csv(os.path.join(out_dir, 'synthetic_household_hourly_2019.csv'))
+
+# feature engineering
+df_fe = df.copy()
+df_fe['hour'] = df_fe.index.hour
+df_fe['dayofweek'] = df_fe.index.dayofweek
+df_fe['month'] = df_fe.index.month
+df_fe['is_weekend'] = df_fe['dayofweek'].isin([5,6]).astype(int)
+df_fe['lag_1'] = df_fe['consumption'].shift(1)
+df_fe['lag_24'] = df_fe['consumption'].shift(24)
+df_fe['lag_168'] = df_fe['consumption'].shift(168)
+df_fe['rolling_mean_24'] = df_fe['consumption'].rolling(window=24).mean().shift(1)
+df_fe['rolling_std_24'] = df_fe['consumption'].rolling(window=24).std().shift(1)
+df_fe = df_fe.dropna()
+
+n2 = len(df_fe)
+train_end = int(n2 * 0.8)
+train = df_fe.iloc[:train_end]
+test = df_fe.iloc[train_end:]
+FEATURES = ['temp','humidity','wind_speed','hour','dayofweek','month','is_weekend',
+            'lag_1','lag_24','lag_168','rolling_mean_24','rolling_std_24']
+
+X_train = train[FEATURES].values
+y_train = train['consumption'].values
+X_test = test[FEATURES].values
+y_test = test['consumption'].values
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+joblib.dump(scaler, os.path.join(out_dir, 'scaler.pkl'))
+
+models = {
+    'LinearRegression': LinearRegression(),
+    'RandomForest': RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=1),
+    'GradientBoosting': GradientBoostingRegressor(n_estimators=100, random_state=42)
+}
+if XGBOOST_AVAILABLE:
+    models['XGBoost'] = XGBRegressor(n_estimators=100, random_state=42, verbosity=0, n_jobs=1)
+models['SVR'] = SVR()
+
+results = []
+predictions = {}
+
+for name, model in models.items():
+    start = time.time()
+    if name in ['LinearRegression','SVR']:
+        model.fit(X_train_scaled, y_train)
+        preds = model.predict(X_test_scaled)
+    else:
+        model.fit(X_train, y_train)
+        preds = model.predict(X_test)
+    end = time.time()
+    train_time = end - start
+    rmse = mean_squared_error(y_test, preds, squared=False)
+    mae = mean_absolute_error(y_test, preds)
+    r2 = r2_score(y_test, preds)
+    results.append({'model': name, 'rmse': float(rmse), 'mae': float(mae), 'r2': float(r2), 'train_time_s': float(train_time)})
+    predictions[name] = preds
+    joblib.dump(model, os.path.join(out_dir, f'{name}.pkl'))
+    pd.DataFrame({'timestamp': test.index, 'actual': y_test, 'predicted': preds}).to_csv(os.path.join(out_dir, f'{name}_predictions.csv'), index=False)
+
+metrics_df = pd.DataFrame(results).sort_values('rmse').reset_index(drop=True)
+metrics_df.to_csv(os.path.join(out_dir, 'metrics.csv'), index=False)
+
+# plots
+plt.figure(figsize=(8,4))
+plt.bar(metrics_df['model'], metrics_df['rmse'])
+plt.ylabel('RMSE')
+plt.title('Model RMSE comparison')
+plt.tight_layout()
+rmse_png = os.path.join(out_dir, 'comparison_rmse.png')
+plt.savefig(rmse_png); plt.close()
+
+plt.figure(figsize=(8,4))
+plt.bar(metrics_df['model'], metrics_df['mae'])
+plt.ylabel('MAE')
+plt.title('Model MAE comparison')
+plt.tight_layout()
+mae_png = os.path.join(out_dir, 'comparison_mae.png')
+plt.savefig(mae_png); plt.close()
+
+plt.figure(figsize=(8,4))
+plt.bar(metrics_df['model'], metrics_df['r2'])
+plt.ylabel('R2 score')
+plt.title('Model R2 comparison')
+plt.tight_layout()
+r2_png = os.path.join(out_dir, 'comparison_r2.png')
+plt.savefig(r2_png); plt.close()
+
+top_models = list(metrics_df['model'].iloc[:3])
+for name in top_models:
+    plt.figure(figsize=(12,4))
+    plt.plot(test.index[:24*7], y_test[:24*7], label='Actual')
+    plt.plot(test.index[:24*7], predictions[name][:24*7], label='Predicted')
+    plt.title(f'Actual vs Predicted (first week) - {name}')
+    plt.legend()
+    plt.tight_layout()
+    p = os.path.join(out_dir, f'{name}_actual_vs_predicted_week.png')
+    plt.savefig(p); plt.close()
+
+for name in ['RandomForest','GradientBoosting','XGBoost']:
+    if name in models:
+        model = models[name]
+        if hasattr(model, 'feature_importances_'):
+            fi = model.feature_importances_
+            idx = np.argsort(fi)
+            plt.figure(figsize=(6,4))
+            plt.barh([FEATURES[i] for i in idx], fi[idx])
+            plt.title(f'Feature importance - {name}')
+            plt.tight_layout()
+            p = os.path.join(out_dir, f'{name}_feature_importance.png')
+            plt.savefig(p); plt.close()
+
+best = metrics_df['model'].iloc[0]
+resid = y_test - predictions[best]
+plt.figure(figsize=(6,4))
+plt.hist(resid, bins=60)
+plt.title(f'Residual distribution - {best}')
+plt.tight_layout()
+resid_png = os.path.join(out_dir, f'{best}_residuals.png')
+plt.savefig(resid_png); plt.close()
+
+summary = {'dataset_rows': n, 'feature_rows_after_fe': n2, 'train_rows': len(train), 'test_rows': len(test), 'models_trained': list(models.keys())}
+pd.DataFrame([summary]).to_csv(os.path.join(out_dir, 'run_summary.csv'), index=False)
+
+# display metrics
+import ace_tools as tools; tools.display_dataframe_to_user('Model Performance Metrics (1-year synthetic)', metrics_df)
+
+print('Done. Outputs saved to:', out_dir)
+print('Files:')
+for f in sorted(os.listdir(out_dir)):
+    print('-', f)

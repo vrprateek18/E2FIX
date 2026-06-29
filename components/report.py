@@ -1,0 +1,662 @@
+# ==========================================================
+# E2FIX
+# PDF REPORT GENERATOR
+# ==========================================================
+
+import os
+import qrcode
+
+from datetime import datetime
+
+# -----------------------------
+# ReportLab
+# -----------------------------
+from reportlab.lib import colors
+
+from reportlab.lib.enums import TA_CENTER
+
+from reportlab.lib.styles import getSampleStyleSheet
+
+from reportlab.lib.styles import ParagraphStyle
+
+from reportlab.lib.units import inch
+
+from reportlab.lib.pagesizes import A4
+
+from reportlab.platypus import (
+
+    SimpleDocTemplate,
+
+    Paragraph,
+
+    Spacer,
+
+    Table,
+
+    TableStyle,
+
+    Image,
+
+    PageBreak
+
+)
+
+# -----------------------------
+# Engine
+# -----------------------------
+from logic_layer.report_engine import (
+    generate_report_data
+)
+
+
+# ==========================================================
+# REPORT DIRECTORY
+# ==========================================================
+
+REPORT_FOLDER = "reports"
+
+os.makedirs(
+
+    REPORT_FOLDER,
+
+    exist_ok=True
+
+)
+
+# ==========================================================
+# PDF STYLES
+# ==========================================================
+
+styles = getSampleStyleSheet()
+
+title_style = ParagraphStyle(
+
+    "Title",
+
+    parent=styles["Heading1"],
+
+    alignment=TA_CENTER,
+
+    textColor=colors.darkgreen,
+
+    fontSize=24,
+
+    spaceAfter=20
+
+)
+
+heading_style = ParagraphStyle(
+
+    "Heading",
+
+    parent=styles["Heading2"],
+
+    textColor=colors.darkblue,
+
+    spaceAfter=12
+
+)
+
+normal_style = styles["BodyText"]
+
+
+# ==========================================================
+# LOGO
+# ==========================================================
+
+LOGO_PATH = "assets/logo.png"
+
+
+# ==========================================================
+# QR CODE
+# ==========================================================
+
+def generate_qr(report):
+
+    qr = qrcode.make(
+
+        f"""
+
+E2FIX Environmental Report
+
+Report ID : {report['report_id']}
+
+Location : {report['location']}
+
+Environmental Score : {report['environmental_score']}
+
+AQI : {report['aqi']}
+
+Generated : {report['generated_at']}
+
+"""
+
+    )
+
+    qr_path = os.path.join(
+
+        REPORT_FOLDER,
+
+        "temp_qr.png"
+
+    )
+
+    qr.save(qr_path)
+
+    return qr_path
+
+
+# ==========================================================
+# COVER PAGE
+# ==========================================================
+
+def add_cover_page(story, report):
+
+    # -----------------------------
+    # Logo
+    # -----------------------------
+    if os.path.exists(LOGO_PATH):
+
+        logo = Image(
+
+            LOGO_PATH,
+
+            width=2.8*inch,
+
+            height=2.8*inch
+
+        )
+
+    else:
+
+        logo = Paragraph(
+
+            "<b>E2FIX</b>",
+
+            title_style
+
+        )
+
+    # -----------------------------
+    # QR Code
+    # -----------------------------
+    qr_path = generate_qr(report)
+
+    qr = Image(
+
+        qr_path,
+
+        width=1.5*inch,
+
+        height=1.5*inch
+
+    )
+
+    # -----------------------------
+    # Logo + QR
+    # -----------------------------
+    top = Table(
+
+        [[logo, qr]],
+
+        colWidths=[5.3*inch,1.8*inch]
+
+    )
+
+    top.setStyle(
+
+        TableStyle([
+
+            ("VALIGN",(0,0),(-1,-1),"TOP"),
+
+            ("ALIGN",(0,0),(0,0),"LEFT"),
+
+            ("ALIGN",(1,0),(1,0),"RIGHT")
+
+        ])
+
+    )
+
+    story.append(top)
+
+    story.append(Spacer(1,20))
+
+
+    story.append(
+
+        Paragraph(
+
+            "AI Powered Environmental Assessment Report",
+
+            title_style
+
+        )
+
+    )
+
+    story.append(Spacer(1,10))
+
+
+    info = [
+
+        ["Report ID", report["report_id"]],
+
+        ["Location", report["location"]],
+
+        ["Date", report["generated_at"].strftime("%d %B %Y")],
+
+        ["Time", report["generated_at"].strftime("%I:%M %p")]
+
+    ]
+
+    table = Table(
+
+        info,
+
+        colWidths=[2*inch,4*inch]
+
+    )
+
+    table.setStyle(
+
+        TableStyle([
+
+            ("BACKGROUND",(0,0),(0,-1),colors.HexColor("#2E7D32")),
+
+            ("TEXTCOLOR",(0,0),(0,-1),colors.white),
+
+            ("GRID",(0,0),(-1,-1),1,colors.grey),
+
+            ("BOTTOMPADDING",(0,0),(-1,-1),8),
+
+            ("BACKGROUND",(1,0),(1,-1),colors.whitesmoke)
+
+        ])
+
+    )
+
+    story.append(table)
+
+    story.append(Spacer(1,25))
+
+    badge = f"""
+
+<b>Environmental Score</b>
+
+<br/><br/>
+
+<font size=28>
+
+{report["environmental_score"]}/100
+
+</font>
+
+<br/><br/>
+
+<b>{report["grade"]}</b>
+
+"""
+
+    story.append(
+
+        Paragraph(
+
+            badge,
+
+            ParagraphStyle(
+
+                "Badge",
+
+                parent=styles["Heading1"],
+
+                alignment=TA_CENTER,
+
+                textColor=colors.darkgreen
+
+            )
+
+        )
+
+    )
+
+    story.append(Spacer(1,20))
+
+
+    story.append(
+
+        Paragraph(
+
+            """
+
+<b>Generated by E2FIX</b>
+
+<br/>
+
+AI Powered Environmental Decision Support & Recovery Platform
+
+<br/><br/>
+
+<i>
+
+Confidential Environmental Assessment Report
+
+For Educational, Research & Demonstration Purposes
+
+</i>
+
+""",
+
+            ParagraphStyle(
+
+                "Footer",
+
+                alignment=TA_CENTER,
+
+                fontSize=12
+
+            )
+
+        )
+
+    )
+
+    story.append(PageBreak())
+
+
+# ==========================================================
+# PAGE HEADER
+# ==========================================================
+
+def add_page_header(canvas, doc):
+
+    canvas.saveState()
+
+    canvas.setFont("Helvetica-Bold", 14)
+
+    canvas.setFillColor(colors.darkgreen)
+
+    canvas.drawString(
+
+        40,
+
+        810,
+
+        "🌍 E2FIX Environmental Assessment Report"
+
+    )
+
+    canvas.setFont("Helvetica", 10)
+
+    canvas.setFillColor(colors.grey)
+
+    canvas.drawString(
+
+        40,
+
+        795,
+
+        "AI Powered Environmental Decision Support & Recovery Platform"
+
+    )
+
+    canvas.line(
+
+        40,
+
+        790,
+
+        555,
+
+        790
+
+    )
+
+    canvas.restoreState()
+
+
+# ==========================================================
+# PAGE FOOTER
+# ==========================================================
+
+def add_page_footer(canvas, doc):
+
+    canvas.saveState()
+
+    canvas.line(
+
+        40,
+
+        40,
+
+        555,
+
+        40
+
+    )
+
+    canvas.setFont(
+
+        "Helvetica",
+
+        9
+
+    )
+
+    canvas.drawString(
+
+        40,
+
+        25,
+
+        "Generated by E2FIX "
+
+    )
+
+    canvas.drawRightString(
+
+        555,
+
+        25,
+
+        f"Page {canvas.getPageNumber()}"
+
+    )
+
+    canvas.restoreState()
+
+
+    # ==========================================================
+# GENERATE PDF
+# ==========================================================
+
+def generate_pdf():
+
+    report = generate_report_data()
+
+    if report is None:
+
+        return None
+
+    pdf_path = os.path.join(
+
+        REPORT_FOLDER,
+
+        f"{report['report_id']}.pdf"
+
+    )
+
+    doc = SimpleDocTemplate(
+
+        pdf_path,
+
+        pagesize=A4,
+
+        rightMargin=40,
+
+        leftMargin=40,
+
+        topMargin=40,
+
+        bottomMargin=40
+
+    )
+
+    story = []
+
+    # -----------------------------------
+    # Pages
+    # -----------------------------------
+
+    add_cover_page(
+
+        story,
+
+        report
+
+    )
+
+    add_executive_summary(
+
+        story,
+
+        report
+
+    )
+
+    # Remaining pages
+    # add_environment_analysis(...)
+    # add_recovery_page(...)
+    # add_ai_page(...)
+    # add_analytics_page(...)
+    # add_smart_map_page(...)
+    # add_closing_page(...)
+
+    doc.build(
+
+        story,
+
+        onFirstPage=draw_page,
+
+        onLaterPages=draw_page
+
+    )
+
+    return pdf_path
+
+# ==========================================================
+# HEADER + FOOTER
+# ==========================================================
+
+def draw_page(canvas, doc):
+
+    canvas.saveState()
+
+    # -----------------------------
+    # Header
+    # -----------------------------
+    canvas.setFont(
+
+        "Helvetica-Bold",
+
+        14
+
+    )
+
+    canvas.setFillColor(
+
+        colors.darkgreen
+
+    )
+
+    canvas.drawString(
+
+        40,
+
+        810,
+
+        "E2FIX Environmental Assessment Report"
+
+    )
+
+    canvas.setFont(
+
+        "Helvetica",
+
+        9
+
+    )
+
+    canvas.setFillColor(
+
+        colors.grey
+
+    )
+
+    canvas.drawString(
+
+        40,
+
+        795,
+
+        "AI Powered Environmental Decision Support & Recovery Platform"
+
+    )
+
+    canvas.line(
+
+        40,
+
+        790,
+
+        555,
+
+        790
+
+    )
+
+    # -----------------------------
+    # Footer
+    # -----------------------------
+    canvas.line(
+
+        40,
+
+        40,
+
+        555,
+
+        40
+
+    )
+
+    canvas.setFont(
+
+        "Helvetica",
+
+        9
+
+    )
+
+    canvas.drawString(
+
+        40,
+
+        25,
+
+        "Generated by E2FIX "
+
+    )
+
+    canvas.drawRightString(
+
+        555,
+
+        25,
+
+        f"Page {canvas.getPageNumber()}"
+
+    )
+
+    canvas.restoreState()
+
+

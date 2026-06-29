@@ -1,0 +1,12 @@
+streamlit
+requests
+folium
+streamlit-folium
+plotly
+python-dotenv
+pandas
+reportlab
+qrcode[pil]
+Pillow
+kaleido
+openpyxl

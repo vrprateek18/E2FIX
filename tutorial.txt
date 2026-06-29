@@ -1,0 +1,3 @@
+cd P:\E2FIX
+.\venv\Scripts\Activate.ps1
+python -m streamlit run Overview.py
