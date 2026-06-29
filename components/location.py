@@ -10,50 +10,57 @@ from streamlit_folium import st_folium
 # ==========================================================
 
 def reverse_geocode(lat, lon):
-
     try:
+        url = "https://nominatim.openstreetmap.org/reverse"
 
-        url = (
-            f"https://nominatim.openstreetmap.org/reverse"
-            f"?lat={lat}&lon={lon}&format=json"
-        )
+        params = {
+            "lat": lat,
+            "lon": lon,
+            "format": "jsonv2",
+            "addressdetails": 1
+        }
+
+        headers = {
+            "User-Agent": "E2FIX/1.0 (https://github.com/vrprateek18/E2FIX)"
+        }
 
         response = requests.get(
-
             url,
-
-            headers={
-
-                "User-Agent":"E2FIX"
-
-            },
-
+            params=params,
+            headers=headers,
             timeout=10
-
         )
+
+        response.raise_for_status()
 
         data = response.json()
 
         address = data.get("address", {})
 
-        return (
-
+        location = (
             address.get("city")
-
             or address.get("town")
-
             or address.get("village")
-
+            or address.get("municipality")
+            or address.get("suburb")
             or address.get("county")
-
+            or address.get("state_district")
             or address.get("state")
-
-            or "Unknown"
-
         )
 
-    except:
+        if location:
+            return location
 
+        # Final fallback
+        display_name = data.get("display_name")
+
+        if display_name:
+            return display_name.split(",")[0]
+
+        return "Unknown"
+
+    except Exception as e:
+        print("Reverse Geocode Error:", e)
         return "Unknown"
 
 # ==========================================================
