@@ -162,41 +162,25 @@ generate = st.button(
 
 if generate:
 
-    with st.spinner(
-
-        "Generating Professional PDF Report..."
-
-    ):
-
+    with st.spinner("Generating Professional PDF Report..."):
         pdf_file = generate_report(data)
 
-    st.success(
-        "✅ Environmental Report Generated Successfully!"
-    )
-    
-    
-    if os.path.exists(pdf_file):
+    if pdf_file and os.path.exists(pdf_file):
+
+        st.success("✅ Environmental Report Generated Successfully!")
 
         with open(pdf_file, "rb") as file:
 
             st.download_button(
+                "⬇ Download PDF Report",
+                data=file.read(),   # <-- ye bhi important change hai
+                file_name=os.path.basename(pdf_file),
+                mime="application/pdf",
+                use_container_width=True
+            )
 
-            "⬇ Download PDF Report",
+    else:
 
-            data=file,
+        st.error("❌ PDF file was not generated.")
 
-            file_name=os.path.basename(pdf_file),
-
-            mime="application/pdf",
-
-            use_container_width=True
-
-        )
-
-else:
-
-    st.error(
-        "PDF file was not generated."
-        )
-        
 footer()
