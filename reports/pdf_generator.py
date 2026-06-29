@@ -203,20 +203,22 @@ def load_logo():
 # ==========================================================
 
 def save_chart(fig, filename):
-
     os.makedirs("reports/charts", exist_ok=True)
 
     filepath = os.path.join("reports", "charts", filename)
 
-    fig.write_image(
-        filepath,
-        width=1000,
-        height=600,
-        scale=2
-    )
+    try:
+        fig.write_image(
+            filepath,
+            width=1000,
+            height=600,
+            scale=2,
+            engine="kaleido"
+        )
+    except Exception as e:
+        raise RuntimeError(f"Error saving chart: {e}")
 
     return filepath
-
 
 
 

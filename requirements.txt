@@ -2,11 +2,11 @@ streamlit
 requests
 folium
 streamlit-folium
-plotly
+plotly==5.24.1
+kaleido==0.2.1
 python-dotenv
 pandas
 reportlab
 qrcode[pil]
 Pillow
-kaleido
 openpyxl
