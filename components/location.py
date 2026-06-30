@@ -31,6 +31,9 @@ def reverse_geocode(lat, lon):
             timeout=10
         )
 
+        st.write(response.status_code)
+        st.write(response.text)
+
         response.raise_for_status()
 
         data = response.json()
