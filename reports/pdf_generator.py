@@ -1056,8 +1056,17 @@ environmental quality and sustainability.
         )
     )
 
-    aqi = data.get("aqi", 50)
-    temp = data.get("temperature", 25)
+    try:
+
+        aqi = float(data.get("aqi") or 0)
+    except (TypeError, ValueError):
+        aqi = 0
+
+    try:
+        temp = float(data.get("temperature") or 0)
+    except (TypeError, ValueError):
+        temp = 0
+    
 
     if aqi > 200:
 

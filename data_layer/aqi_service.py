@@ -6,6 +6,7 @@ load_dotenv()
 
 AQI_API_TOKEN = os.getenv("AQI_API_TOKEN")
 
+
 def get_aqi(lat, lon):
 
     try:
@@ -14,8 +15,7 @@ def get_aqi(lat, lon):
 
         response = requests.get(url, timeout=10)
 
-        print("STATUS:", response.status_code)
-        print("RESPONSE:", response.text)
+        response.raise_for_status()
 
         data = response.json()
 
@@ -23,16 +23,16 @@ def get_aqi(lat, lon):
 
             aqi = data["data"].get("aqi")
 
-            print("AQI =", aqi)
+            # Ensure AQI is always numeric
+            if aqi is None or aqi == "-":
+                return 0
 
-            return aqi
+            return int(aqi)
 
         print("AQI ERROR:", data)
-
-        return None
+        return 0
 
     except Exception as e:
 
         print("AQI FETCH ERROR:", e)
-
-        return None
+        return 0
