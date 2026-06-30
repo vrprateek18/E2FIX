@@ -246,8 +246,6 @@ def main():
 
         with st.spinner("Analyzing Environment..."):
 
-            st.write(location)   # 👈 Add this
-
             analysis = analyze_environment(location)
 
             if analysis is None:
