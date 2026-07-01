@@ -176,7 +176,7 @@ def generate_qr(text):
 
 def load_logo():
 
-    logo_path = "assets/e2fix_logo.png"
+    logo_path = "assets/logo.png"
 
     if os.path.exists(logo_path):
 
@@ -1712,114 +1712,43 @@ research, and decision-support purposes only.
 
 
 
-# ==========================================================
-# GENERATE REPORT
-# ==========================================================
+def generate_report(data):
 
-def generate_report(data, filename="Environmental_Report.pdf"):
+    os.makedirs("reports/generated", exist_ok=True)
+
+    filename = os.path.join(
+        "reports",
+        "generated",
+        "Environmental_Report.pdf"
+    )
 
     doc = SimpleDocTemplate(
-
         filename,
-
         leftMargin=40,
-
         rightMargin=40,
-
         topMargin=40,
-
         bottomMargin=40
-
     )
 
     styles = get_styles()
-
     story = []
 
     report_id = generate_report_id()
+    generated_date = datetime.datetime.now().strftime("%d %B %Y %I:%M %p")
 
-    generated_date = datetime.datetime.now().strftime(
+    try:
+        add_cover_page(story, styles, data, report_id, generated_date)
+        add_executive_summary(story, styles, data)
+        add_environmental_analysis(story, styles, data)
+        add_recovery_dashboard(story, styles, data)
+        add_ai_recommendation(story, styles, data)
+        add_analytics_page(story, styles, data)
+        add_conclusion(story, styles, data)
+        add_verification_page(story, styles, data, report_id, generated_date)
 
-        "%d %B %Y %I:%M %p"
+        doc.build(story)
 
-    )
+        return filename
 
-    # Cover Page
-    # Executive Summary
-    # Analysis
-    # Recovery
-    # AI Recommendation
-    # Conclusion
-
-
-    add_cover_page(
-        story,
-        styles,
-        data,
-        report_id,
-        generated_date
-
-    )
-
-
-    add_executive_summary(
-
-        story,
-        styles,
-        data
-
-    )
-
-    add_environmental_analysis(
-
-        story,
-        styles,
-        data
-
-    )
-
-
-    add_recovery_dashboard(
-
-        story,
-        styles,
-        data
-
-    )
-
-    add_ai_recommendation(
-
-        story,
-        styles,
-        data
-
-    )
-
-    add_analytics_page(
-        story,
-        styles,
-        data
-    )
-
-
-    add_conclusion(
-
-        story,
-        styles,
-        data
-
-    )
-
-    add_verification_page(
-
-        story,
-        styles,
-        data,
-        report_id,
-        generated_date
-
-    )
-
-    doc.build(story)
-
-    return filename
+    except Exception as e:
+        raise RuntimeError(f"PDF generation failed: {e}")
